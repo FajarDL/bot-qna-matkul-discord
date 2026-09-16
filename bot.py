@@ -1,8 +1,12 @@
+import os
+import re
+import json
 import discord
 from discord.ext import commands
 from discord import app_commands
 import config
 from knowledge_base import MATKUL_CATEGORIES
+from game_manager import game_mgr
 
 # Inisialisasi Klien Gemini AI
 ai_client = None
@@ -52,6 +56,50 @@ async def ask_gemini(prompt: str, custom_instruction: str = None) -> str:
             continue
     return f"Terjadi kesalahan pada server AI: `{str(last_error)}`"
 
+def is_owner_or_admin(interaction: discord.Interaction) -> bool:
+    """Cek apakah pengguna adalah pemilik bot atau administrator."""
+    owner_id = getattr(config, "OWNER_DISCORD_ID", "").strip()
+    if owner_id and str(interaction.user.id) == owner_id:
+        return True
+    if interaction.guild and interaction.user.guild_permissions.administrator:
+        return True
+    return False
+
+async def generate_quiz_question(category: str) -> dict:
+    """Meminta Gemini untuk membuat 1 pertanyaan kuis dan kunci jawabannya dalam format JSON."""
+    prompt = f"""Kamu adalah pembuat soal kuis akademik untuk mahasiswa bidang Ilmu Komputer dan Informatika.
+Tolong buatkan 1 buah soal kuis/trivia seputar topik: '{category}'.
+Kriteria soal:
+1. Menarik, mendidik, dan relevan dengan materi perkuliahan.
+2. Jawabannya HARUS berupa kata tunggal atau frasa pendek yang pasti (maksimal 1-3 kata), bukan kalimat panjang!
+   Contoh pertanyaan & jawaban:
+   - "Struktur data apa yang beroperasi dengan prinsip LIFO (Last-In First-Out)?" -> Jawaban: "Stack"
+   - "Keyword SQL apa yang digunakan untuk mengurutkan hasil query?" -> Jawaban: "ORDER BY"
+   - "Protokol apa yang digunakan untuk mentransfer data halaman web secara aman?" -> Jawaban: "HTTPS"
+3. Berikan variasi jawaban atau sinonim umum pada 'alternatif'.
+
+Balas HANYA dalam format JSON baku berikut (tanpa markdown tambahan):
+{{
+    "pertanyaan": "Teks soal kuis...",
+    "jawaban": "Kunci jawaban utama",
+    "alternatif": ["variasi 1", "variasi 2"]
+}}"""
+    resp_text = await ask_gemini(prompt)
+    clean_json = re.sub(r"^```(json)?", "", resp_text.strip(), flags=re.IGNORECASE)
+    clean_json = re.sub(r"```$", "", clean_json.strip()).strip()
+    try:
+        data = json.loads(clean_json)
+        if isinstance(data, dict) and "pertanyaan" in data and "jawaban" in data:
+            return data
+    except Exception:
+        pass
+    
+    return {
+        "pertanyaan": f"Sebutkan salah satu istilah atau konsep dasar penting dalam topik {category}!",
+        "jawaban": category,
+        "alternatif": []
+    }
+
 @bot.event
 async def on_ready():
     print("=" * 50)
@@ -79,7 +127,35 @@ async def on_message(message: discord.Message):
     if message.author.bot:
         return
 
-    # Menjawab mention langsung dari pengguna
+    # 1. Cek apakah ada game kuis aktif di channel ini (Siapa Cepat Dia Dapat)
+    active_game = game_mgr.get_active_game(message.channel.id)
+    if active_game:
+        is_correct, points, correct_ans = game_mgr.check_guess(
+            channel_id=message.channel.id,
+            user_id=message.author.id,
+            username=message.author.display_name,
+            guess=message.content
+        )
+        if is_correct:
+            stats = game_mgr.get_user_stats(message.author.id)
+            embed = discord.Embed(
+                title="🎉 BINGO! JAWABAN BENAR!",
+                description=(
+                    f"🏆 Selamat kepada {message.author.mention}!\n\n"
+                    f"✅ **Jawaban Tepat:** `{correct_ans}`\n"
+                    f"🎁 **Hadiah:** `+{points} Poin`\n\n"
+                    f"📊 **Statistik Poin Kamu Saat Ini:**\n"
+                    f"• Total Poin: **{stats['points']} Poin**\n"
+                    f"• Total Menang: **{stats['wins']}x Juara**\n\n"
+                    f"*Gunakan `/leaderboard` untuk melihat peringkat klasemen server!*"
+                ),
+                color=config.COLOR_SUCCESS
+            )
+            embed.set_footer(text="Game Selesai • Kuota 1 Pemenang Terpenuhi!")
+            await message.reply(embed=embed)
+            return
+
+    # 2. Menjawab mention langsung dari pengguna
     if bot.user in message.mentions:
         query = message.clean_content.replace(f"@{bot.user.name}", "").strip()
         if not query:
@@ -228,11 +304,168 @@ async def slash_matkul(interaction: discord.Interaction, kategori: app_commands.
     else:
         await interaction.response.send_message("Kategori tidak ditemukan.", ephemeral=True)
 
+@bot.tree.command(name="kuis-mulai", description="[Owner/Admin] Mulai game kuis berhadiah poin (Siapa Cepat Dia Dapat)")
+@app_commands.describe(
+    kategori="Pilih topik materi kuis",
+    hadiah_poin="Jumlah poin hadiah untuk 1 pemenang pertama (default: 10)",
+    soal_custom="Tulis soal kuis kustom buatan sendiri (opsional)",
+    jawaban_custom="Kunci jawaban dari soal kuis kustom (opsional)"
+)
+@app_commands.choices(kategori=[
+    app_commands.Choice(name="Algoritma & Pemrograman", value="Algoritma dan Pemrograman"),
+    app_commands.Choice(name="Struktur Data", value="Struktur Data"),
+    app_commands.Choice(name="Basis Data & SQL", value="Basis Data dan SQL"),
+    app_commands.Choice(name="Jaringan Komputer", value="Jaringan Komputer"),
+    app_commands.Choice(name="Rekayasa Perangkat Lunak", value="Rekayasa Perangkat Lunak dan UML"),
+    app_commands.Choice(name="Sistem Operasi", value="Sistem Operasi"),
+    app_commands.Choice(name="Tebak Output Kode", value="Tebak Output Kode Program"),
+    app_commands.Choice(name="Soal Kustom Sendiri", value="custom")
+])
+async def slash_kuis_mulai(
+    interaction: discord.Interaction,
+    kategori: app_commands.Choice[str],
+    hadiah_poin: int = 10,
+    soal_custom: str = None,
+    jawaban_custom: str = None
+):
+    if not is_owner_or_admin(interaction):
+        await interaction.response.send_message(
+            "⛔ **Akses Ditolak!**\nPerintah memulai kuis saat ini hanya dapat dijalankan oleh pemilik bot / administrator server.",
+            ephemeral=True
+        )
+        return
+
+    if game_mgr.get_active_game(interaction.channel_id):
+        await interaction.response.send_message(
+            "⚠️ **Kuis Masih Aktif!**\nSudah ada kuis yang sedang berjalan di channel ini. Tunggu terjawab atau gunakan `/kuis-stop` untuk membatalkannya.",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.defer()
+
+    if kategori.value == "custom":
+        if not soal_custom or not jawaban_custom:
+            await interaction.followup.send(
+                "⚠️ Jika memilih kategori **Soal Kustom Sendiri**, Anda wajib mengisi kolom `soal_custom` dan `jawaban_custom`.",
+                ephemeral=True
+            )
+            return
+        pertanyaan = soal_custom.strip()
+        jawaban = jawaban_custom.strip()
+        alternatif = []
+        kategori_label = "Soal Kustom Pemilik"
+    else:
+        kategori_label = kategori.name
+        quiz_data = await generate_quiz_question(kategori.value)
+        pertanyaan = quiz_data.get("pertanyaan", "")
+        jawaban = quiz_data.get("jawaban", "")
+        alternatif = quiz_data.get("alternatif", [])
+
+    session = game_mgr.start_game(
+        channel_id=interaction.channel_id,
+        question=pertanyaan,
+        answer=jawaban,
+        points=hadiah_poin,
+        started_by=interaction.user.id,
+        alternatives=alternatif
+    )
+
+    embed = discord.Embed(
+        title="🎮 KUIS MATKUL: SIAPA CEPAT DIA DAPAT!",
+        description=(
+            f"📚 **Topik:** `{kategori_label}`\n"
+            f"🎁 **Hadiah:** `+{hadiah_poin} Poin` *(Khusus 1 Pemenang Tercepat!)*\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"**❓ SOAL:**\n"
+            f"### {pertanyaan}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"⚡ **Aturan Main:**\n"
+            f"• Langsung **ketik jawabanmu di chat channel ini**!\n"
+            f"• Hanya **1 orang tercepat** dengan jawaban benar yang akan merebut hadiah poin.\n"
+            f"• Game akan langsung selesai otomatis saat ada yang menjawab tepat!"
+        ),
+        color=config.COLOR_GAME
+    )
+    embed.set_footer(text=f"Kuis dimulai oleh {interaction.user.display_name} • Bot QnA Matkul")
+    await interaction.followup.send(embed=embed)
+
+@bot.tree.command(name="kuis-stop", description="[Owner/Admin] Hentikan paksa sesi kuis yang sedang aktif di channel ini")
+async def slash_kuis_stop(interaction: discord.Interaction):
+    if not is_owner_or_admin(interaction):
+        await interaction.response.send_message(
+            "⛔ **Akses Ditolak!** Hanya pemilik bot / administrator yang dapat menghentikan kuis.",
+            ephemeral=True
+        )
+        return
+
+    session = game_mgr.stop_game(interaction.channel_id)
+    if session:
+        embed = discord.Embed(
+            title="⏹️ Kuis Telah Dihentikan",
+            description=(
+                f"Sesi kuis di channel ini telah dihentikan oleh {interaction.user.mention}.\n\n"
+                f"💡 **Kunci Jawaban Sebenarnya:** `{session.answer}`"
+            ),
+            color=config.COLOR_WARNING
+        )
+        await interaction.response.send_message(embed=embed)
+    else:
+        await interaction.response.send_message(
+            "Tidak ada sesi kuis yang sedang aktif di channel ini.",
+            ephemeral=True
+        )
+
+@bot.tree.command(name="leaderboard", description="Lihat papan peringkat klasemen poin kuis di server")
+async def slash_leaderboard(interaction: discord.Interaction):
+    leaders = game_mgr.get_leaderboard(limit=10)
+    if not leaders:
+        await interaction.response.send_message(
+            "📋 Belum ada perolehan poin kuis yang tercatat. Ayo menangkan kuis berikutnya!",
+            ephemeral=True
+        )
+        return
+
+    medals = ["🥇", "🥈", "🥉"]
+    lines = []
+    for idx, u in enumerate(leaders, start=1):
+        icon = medals[idx - 1] if idx <= 3 else f"`#{idx}`"
+        lines.append(f"{icon} **{u['username']}** — **{u['points']} Poin** ({u['wins']}x Juara)")
+
+    embed = discord.Embed(
+        title="🏆 Klasemen Skor Kuis Matkul",
+        description="\n".join(lines),
+        color=config.COLOR_GAME
+    )
+    embed.set_footer(text="Kumpulkan poin dengan menjawab kuis tercepat!")
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="poin", description="Cek jumlah poin kuis dan total kemenangan Anda atau anggota lain")
+@app_commands.describe(pengguna="Pilih anggota yang ingin dicek poinnya (opsional)")
+async def slash_poin(interaction: discord.Interaction, pengguna: discord.Member = None):
+    target = pengguna if pengguna else interaction.user
+    stats = game_mgr.get_user_stats(target.id)
+
+    embed = discord.Embed(
+        title=f"🎖️ Profil Kuis: {target.display_name}",
+        color=config.COLOR_PRIMARY
+    )
+    if target.display_avatar:
+        embed.set_thumbnail(url=target.display_avatar.url)
+
+    embed.add_field(name="💰 Total Poin", value=f"**{stats['points']} Poin**", inline=True)
+    embed.add_field(name="🏆 Total Juara 1", value=f"**{stats['wins']}x Menang**", inline=True)
+    if stats.get("last_win"):
+        embed.add_field(name="🕒 Kemenangan Terakhir", value=f"`{stats['last_win']}`", inline=False)
+
+    embed.set_footer(text="Bot QnA Matkul • Sistem Kuis Berhadiah")
+    await interaction.response.send_message(embed=embed)
+
 @bot.tree.command(name="bantuan", description="Menampilkan panduan penggunaan dan daftar fitur Bot QnA Matkul")
 async def slash_bantuan(interaction: discord.Interaction):
     embed = discord.Embed(
         title=f"📖 Panduan {config.BOT_NAME}",
-        description="Bot asisten tanya-jawab untuk mendampingi mahasiswa dalam belajar dan mengerjakan tugas perkuliahan.",
+        description="Bot asisten tanya-jawab dan kuis interaktif untuk mendampingi mahasiswa dalam belajar perkuliahan.",
         color=config.COLOR_PRIMARY
     )
     embed.add_field(
@@ -251,6 +484,16 @@ async def slash_bantuan(interaction: discord.Interaction):
         inline=False
     )
     embed.add_field(
+        name="🎮 `/kuis-mulai` *(Owner/Admin)*",
+        value="Mulai game kuis berhadiah poin (Siapa Cepat Dia Dapat, kuota 1 pemenang).",
+        inline=False
+    )
+    embed.add_field(
+        name="🏆 `/leaderboard` & `/poin`",
+        value="Lihat papan klasemen perolehan poin server dan cek jumlah poin profil.",
+        inline=False
+    )
+    embed.add_field(
         name="📚 `/matkul`",
         value="Melihat fokus bahasan dan tips belajar per bidang mata kuliah inti.",
         inline=False
@@ -260,7 +503,7 @@ async def slash_bantuan(interaction: discord.Interaction):
         value="Tag `@Bot` di channel mana pun untuk bertanya secara santai.",
         inline=False
     )
-    embed.set_footer(text="Bot QnA Matkul • Belajar Lebih Mudah")
+    embed.set_footer(text="Bot QnA Matkul • Belajar Lebih Mudah & Menyenangkan")
     await interaction.response.send_message(embed=embed)
 
 @bot.tree.command(name="ping", description="Cek latensi koneksi bot")

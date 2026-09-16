@@ -6,6 +6,7 @@ load_dotenv()
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "").strip()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip()
+OWNER_DISCORD_ID = os.getenv("OWNER_DISCORD_ID", "").strip()
 
 BOT_NAME = "Bot QnA Mata Kuliah"
 BOT_PREFIX = "!"
@@ -13,6 +14,7 @@ COLOR_PRIMARY = 0x2563EB   # Royal Blue
 COLOR_SUCCESS = 0x10B981   # Emerald Green
 COLOR_PURPLE  = 0x8B5CF6   # Violet
 COLOR_WARNING = 0xF59E0B   # Amber
+COLOR_GAME    = 0xF59E0B   # Gold / Trophy Amber
 
 SYSTEM_PROMPT = """Kamu adalah 'Bot QnA Matkul', asisten AI cerdas dan ramah yang dirancang khusus untuk membantu mahasiswa dalam sesi tanya jawab (Q&A) seputar materi perkuliahan dan koding.
 

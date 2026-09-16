@@ -155,9 +155,13 @@ async def on_message(message: discord.Message):
             await message.reply(embed=embed)
             return
 
-    # 2. Menjawab mention langsung dari pengguna
-    if bot.user in message.mentions:
-        query = message.clean_content.replace(f"@{bot.user.name}", "").strip()
+    # 2. Menjawab hanya jika bot di-tag secara eksplisit dalam teks pesan (bukan sekadar reply)
+    is_explicit_tag = (
+        bot.user in message.mentions and 
+        (f"<@{bot.user.id}>" in message.content or f"<@!{bot.user.id}>" in message.content)
+    )
+    if is_explicit_tag:
+        query = re.sub(rf"<@!?{bot.user.id}>", "", message.content).strip()
         if not query:
             embed = discord.Embed(
                 title=f"Halo, {message.author.display_name}! 👋",
@@ -172,10 +176,12 @@ async def on_message(message: discord.Message):
 
         async with message.channel.typing():
             jawaban = await ask_gemini(query)
-            if len(jawaban) <= 2000:
-                await message.reply(jawaban)
+            pertanyaan_quoted = "\n> ".join(query.strip().splitlines())
+            pesan = f"**❓ Pertanyaan:**\n> {pertanyaan_quoted}\n\n**💬 Jawaban:**\n{jawaban}"
+            if len(pesan) <= 2000:
+                await message.reply(pesan)
             else:
-                chunks = [jawaban[i:i+1900] for i in range(0, len(jawaban), 1900)]
+                chunks = [pesan[i:i+1900] for i in range(0, len(pesan), 1900)]
                 for chunk in chunks:
                     await message.reply(chunk)
         return

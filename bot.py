@@ -461,50 +461,58 @@ async def slash_poin(interaction: discord.Interaction, pengguna: discord.Member 
     embed.set_footer(text="Bot QnA Matkul • Sistem Kuis Berhadiah")
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="bantuan", description="Menampilkan panduan penggunaan dan daftar fitur Bot QnA Matkul")
-async def slash_bantuan(interaction: discord.Interaction):
+def build_help_embed() -> discord.Embed:
     embed = discord.Embed(
-        title=f"📖 Panduan {config.BOT_NAME}",
-        description="Bot asisten tanya-jawab dan kuis interaktif untuk mendampingi mahasiswa dalam belajar perkuliahan.",
+        title=f"📖 Panduan & Daftar Perintah {config.BOT_NAME}",
+        description=(
+            "Bot asisten cerdas untuk membantu sesi tanya jawab materi perkuliahan, koding, "
+            "dan kuis interaktif berhadiah poin di Discord!"
+        ),
         color=config.COLOR_PRIMARY
     )
+    
     embed.add_field(
-        name="💡 `/tanya <pertanyaan>`",
-        value="Tanyakan konsep materi kuliah apa pun, penjelasan rumus, atau teori algoritma.",
+        name="💡 Tanya Jawab & AI",
+        value=(
+            "• `/tanya <pertanyaan>` : Tanya materi kuliah, rumus, konsep, atau teori.\n"
+            "• `/debug <bahasa> <kode>` : Analisis kode error dan dapatkan solusinya.\n"
+            "• `/ringkas <teks>` : Ringkas materi kuliah panjang jadi poin-poin penting.\n"
+            "• `@Bot <pertanyaan>` : Tag bot langsung di channel untuk bertanya santai."
+        ),
         inline=False
     )
+    
     embed.add_field(
-        name="🛠️ `/debug <bahasa> <kode>`",
-        value="Konsultasikan kode program yang error atau tidak berjalan sesuai ekspektasi.",
+        name="🎮 Game Kuis (Siapa Cepat Dia Dapat)",
+        value=(
+            "• `/kuis-mulai` : *[Owner/Admin]* Mulai kuis berhadiah poin (kuota 1 pemenang).\n"
+            "• `/kuis-stop` : *[Owner/Admin]* Hentikan kuis aktif & bocorkan jawaban.\n"
+            "• `/leaderboard` : Lihat papan klasemen peringkat skor kuis di server.\n"
+            "• `/poin [user]` : Cek perolehan poin dan rekor juara kuis."
+        ),
         inline=False
     )
+    
     embed.add_field(
-        name="📝 `/ringkas <teks_materi>`",
-        value="Meringkas materi kuliah panjang menjadi poin-poin inti yang mudah dihafal.",
+        name="📚 Informasi & Utilitas",
+        value=(
+            "• `/matkul` : Panduan topik dan tips belajar mata kuliah inti.\n"
+            "• `/ping` : Cek kecepatan respons / latensi koneksi bot.\n"
+            "• `/help` atau `/bantuan` : Menampilkan menu panduan perintah ini."
+        ),
         inline=False
     )
-    embed.add_field(
-        name="🎮 `/kuis-mulai` *(Owner/Admin)*",
-        value="Mulai game kuis berhadiah poin (Siapa Cepat Dia Dapat, kuota 1 pemenang).",
-        inline=False
-    )
-    embed.add_field(
-        name="🏆 `/leaderboard` & `/poin`",
-        value="Lihat papan klasemen perolehan poin server dan cek jumlah poin profil.",
-        inline=False
-    )
-    embed.add_field(
-        name="📚 `/matkul`",
-        value="Melihat fokus bahasan dan tips belajar per bidang mata kuliah inti.",
-        inline=False
-    )
-    embed.add_field(
-        name="💬 Mention Langsung",
-        value="Tag `@Bot` di channel mana pun untuk bertanya secara santai.",
-        inline=False
-    )
-    embed.set_footer(text="Bot QnA Matkul • Belajar Lebih Mudah & Menyenangkan")
-    await interaction.response.send_message(embed=embed)
+    
+    embed.set_footer(text="Bot QnA Matkul • Belajar Lebih Cepat & Menyenangkan")
+    return embed
+
+@bot.tree.command(name="help", description="Menampilkan panduan dan daftar semua perintah Bot QnA Matkul")
+async def slash_help(interaction: discord.Interaction):
+    await interaction.response.send_message(embed=build_help_embed())
+
+@bot.tree.command(name="bantuan", description="Menampilkan panduan dan daftar semua perintah Bot QnA Matkul")
+async def slash_bantuan(interaction: discord.Interaction):
+    await interaction.response.send_message(embed=build_help_embed())
 
 @bot.tree.command(name="ping", description="Cek latensi koneksi bot")
 async def slash_ping(interaction: discord.Interaction):
@@ -532,15 +540,7 @@ async def cmd_ping(ctx):
 
 @bot.command(name="bantuan", aliases=["help"])
 async def cmd_bantuan(ctx):
-    embed = discord.Embed(
-        title="Daftar Perintah Bot QnA Matkul",
-        description="Gunakan slash command `/` untuk pengalaman terbaik:",
-        color=config.COLOR_PRIMARY
-    )
-    embed.add_field(name="!tanya <pertanyaan>", value="Tanya materi kuliah via prefix teks", inline=False)
-    embed.add_field(name="!ping", value="Cek kecepatan respon", inline=False)
-    embed.add_field(name="Slash Commands", value="Gunakan `/tanya`, `/debug`, `/ringkas`, `/matkul`, atau `/bantuan`", inline=False)
-    await ctx.reply(embed=embed)
+    await ctx.reply(embed=build_help_embed())
 
 if __name__ == "__main__":
     if not config.DISCORD_BOT_TOKEN:

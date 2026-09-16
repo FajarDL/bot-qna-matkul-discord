@@ -18,9 +18,11 @@ Bot asisten virtual tanya-jawab (Q&A) cerdas berbasis AI (**Google Gemini**) yan
    Melihat 10 besar peringkat klasemen skor mahasiswa di server dan memeriksa saldo poin serta rekor juara pribadi.
 6. **📚 Panduan Bidang Matkul (`/matkul`):**  
    Pilihan panduan dan tips belajar praktis untuk berbagai mata kuliah inti komputasi.
-7. **📖 Menu Panduan Lengkap (`/help`):**  
+7. **💀 Arsip Dosen Killer IF UNJANI (`/dosen-killer`):**  
+   Menampilkan profil rahasia sosok dosen sepuh IF UNJANI, fenomena *Curse of Knowledge*, dan kata keramat *"HARI INI KITA POST TES YA!" 💀*.
+8. **📖 Menu Panduan Lengkap (`/help`):**  
    Menampilkan panduan ringkas dan daftar semua perintah yang dapat dijalankan.
-8. **💬 Interaksi Fleksibel:**  
+9. **💬 Interaksi Fleksibel:**  
    Mendukung *Slash Commands* Discord modern serta respons otomatis saat bot di-mention di channel obrolan.
 
 ---
@@ -86,6 +88,8 @@ bot-qna-matkul-discord/
 ├── requirements.txt   # Daftar dependensi library
 ├── config.py          # Konfigurasi sistem & instruksi persona AI
 ├── knowledge_base.py  # Panduan materi kuliah & tips belajar
+├── dosen_lore.json    # File arsip profil & kata keramat dosen killer
+├── dosen_manager.py   # Pengelola data dosen killer & embed Discord
 ├── game_manager.py    # Logika game kuis & penyimpanan poin
 ├── data/              # Folder penyimpanan database skor lokal
 ├── bot.py             # Logika bot Discord (Slash commands & QnA)

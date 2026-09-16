@@ -7,6 +7,7 @@ from discord import app_commands
 import config
 from knowledge_base import MATKUL_CATEGORIES
 from game_manager import game_mgr
+from dosen_manager import build_dosen_embed, get_dosen_ai_context
 
 # Inisialisasi Klien Gemini AI
 ai_client = None
@@ -37,7 +38,8 @@ async def ask_gemini(prompt: str, custom_instruction: str = None) -> str:
             "⚠️ **API Key Gemini belum terpasang.**\n"
             "Silakan tambahkan `GEMINI_API_KEY` Anda di file `.env` untuk mengaktifkan AI Q&A."
         )
-    instruction = custom_instruction if custom_instruction else config.SYSTEM_PROMPT
+    base_instruction = custom_instruction if custom_instruction else config.SYSTEM_PROMPT
+    instruction = f"{base_instruction}\n\n{get_dosen_ai_context()}"
     last_error = None
     for model_name in MODELS_TO_TRY:
         try:
@@ -502,6 +504,7 @@ def build_help_embed() -> discord.Embed:
     embed.add_field(
         name="📚 Informasi & Utilitas",
         value=(
+            "• `/dosen-killer` : Arsip rahasia & kata keramat Dosen Killer IF UNJANI 💀.\n"
             "• `/matkul` : Panduan topik dan tips belajar mata kuliah inti.\n"
             "• `/ping` : Cek kecepatan respons / latensi koneksi bot.\n"
             "• `/shutdown` : *[Owner/Admin]* Matikan proses bot agar offline.\n"
@@ -512,6 +515,10 @@ def build_help_embed() -> discord.Embed:
     
     embed.set_footer(text="Bot QnA Matkul • Belajar Lebih Cepat & Menyenangkan")
     return embed
+
+@bot.tree.command(name="dosen-killer", description="Melihat arsip rahasia sosok Dosen Killer IF UNJANI & kata keramatnya 💀")
+async def slash_dosen_killer(interaction: discord.Interaction):
+    await interaction.response.send_message(embed=build_dosen_embed())
 
 @bot.tree.command(name="help", description="Menampilkan panduan dan daftar semua perintah Bot QnA Matkul")
 async def slash_help(interaction: discord.Interaction):
@@ -538,6 +545,10 @@ async def slash_shutdown(interaction: discord.Interaction):
     await bot.close()
 
 # ================= TEXT COMMANDS (FALLBACK) =================
+
+@bot.command(name="dosenkiller", aliases=["dosen", "posttest"])
+async def cmd_dosen_killer(ctx):
+    await ctx.reply(embed=build_dosen_embed())
 
 @bot.command(name="tanya")
 async def cmd_tanya(ctx, *, query: str):

@@ -22,3 +22,8 @@ Thumbs.db
 data/*.json
 !data/.gitkeep
 
+
+# Secret settings & private modules
+settingan.json
+dosen_lore.json
+dosen_manager.py

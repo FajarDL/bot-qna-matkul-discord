@@ -7,7 +7,7 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "").strip()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip()
 OWNER_DISCORD_ID = os.getenv("OWNER_DISCORD_ID", "").strip()
-DOSEN_KILLER_NAME = os.getenv("DOSEN_KILLER_NAME", "").strip()
+SETTINGAN_NAMA = os.getenv("SETTINGAN_NAMA", os.getenv("DOSEN_KILLER_NAME", "")).strip()
 
 BOT_NAME = "Bot QnA Mata Kuliah"
 BOT_PREFIX = "!"

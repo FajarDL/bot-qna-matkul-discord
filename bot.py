@@ -7,7 +7,17 @@ from discord import app_commands
 import config
 from knowledge_base import MATKUL_CATEGORIES
 from game_manager import game_mgr
-from dosen_manager import build_dosen_embed, get_dosen_ai_context
+
+# Modul ekstensi privat opsional (hanya dimuat jika file konfigurasi tersedia secara lokal)
+try:
+    from dosen_manager import get_custom_qa_answer, get_pemicu_keywords, get_dosen_ai_context, setup_dosen_commands
+    HAS_DOSEN_MANAGER = True
+except ImportError:
+    HAS_DOSEN_MANAGER = False
+    def get_custom_qa_answer(prompt: str): return None
+    def get_pemicu_keywords(): return []
+    def get_dosen_ai_context(): return ""
+    def setup_dosen_commands(b): pass
 
 # Inisialisasi Klien Gemini AI
 ai_client = None
@@ -38,8 +48,13 @@ async def ask_gemini(prompt: str, custom_instruction: str = None) -> str:
             "⚠️ **API Key Gemini belum terpasang.**\n"
             "Silakan tambahkan `GEMINI_API_KEY` Anda di file `.env` untuk mengaktifkan AI Q&A."
         )
+    # Cek apakah ada jawaban instan yang disetting di settingan.json (hemat token)
+    custom_direct_ans = get_custom_qa_answer(prompt)
+    if custom_direct_ans:
+        return custom_direct_ans
+
     base_instruction = custom_instruction if custom_instruction else config.SYSTEM_PROMPT
-    dosen_keywords = ["dosen killer", "dosen sepuh", "post test", "post-test", "post tes", "curse of knowledge"]
+    dosen_keywords = get_pemicu_keywords()
     if any(k in prompt.lower() for k in dosen_keywords):
         instruction = f"{base_instruction}\n\n{get_dosen_ai_context()}"
     else:
@@ -538,12 +553,6 @@ def build_help_embed() -> discord.Embed:
     
     embed.set_footer(text="Bot QnA Matkul • Belajar Lebih Cepat & Menyenangkan")
     return embed
-
-@bot.tree.command(name="dosen-killer", description="[Rahasia] Melihat arsip rahasia sosok Dosen Killer IF UNJANI")
-async def slash_dosen_killer(interaction: discord.Interaction):
-    # Bersifat privat/rahasia: hanya pengirim yang dapat melihat pesan ini
-    await interaction.response.send_message(embed=build_dosen_embed(), ephemeral=True)
-
 @bot.tree.command(name="help", description="Menampilkan panduan dan daftar semua perintah Bot QnA Matkul")
 async def slash_help(interaction: discord.Interaction):
     await interaction.response.send_message(embed=build_help_embed())
@@ -570,15 +579,6 @@ async def slash_shutdown(interaction: discord.Interaction):
 
 # ================= TEXT COMMANDS (FALLBACK) =================
 
-@bot.command(name="dosenkiller", aliases=["dosen", "posttest"])
-async def cmd_dosen_killer(ctx):
-    # Kirim via DM agar tetap privat dan hapus pesan perintah jika memungkinkan
-    try:
-        await ctx.author.send(embed=build_dosen_embed())
-        await ctx.message.delete()
-    except Exception:
-        await ctx.reply("🔒 Arsip ini bersifat rahasia. Silakan gunakan perintah `/dosen-killer` (hanya Anda yang dapat melihatnya).", delete_after=5)
-
 @bot.command(name="tanya")
 async def cmd_tanya(ctx, *, query: str):
     async with ctx.typing():
@@ -599,6 +599,9 @@ async def cmd_ping(ctx):
 @bot.command(name="bantuan", aliases=["help"])
 async def cmd_bantuan(ctx):
     await ctx.reply(embed=build_help_embed())
+
+# Muat perintah ekstensi privat secara aman jika file modul tersedia secara lokal
+setup_dosen_commands(bot)
 
 if __name__ == "__main__":
     if not config.DISCORD_BOT_TOKEN:

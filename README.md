@@ -86,9 +86,7 @@ bot-qna-matkul-discord/
 ├── requirements.txt   # Daftar dependensi library
 ├── config.py          # Konfigurasi sistem & instruksi persona AI
 ├── knowledge_base.py  # Panduan materi kuliah & tips belajar
-├── dosen_lore.json    # File arsip profil & kata keramat dosen killer
-├── dosen_manager.py   # Pengelola data dosen killer & embed Discord
-├── game_manager.py    # Logika game kuis & penyimpanan poin
+├── game_manager.py    # Logika game kuis & manajemen skor
 ├── data/              # Folder penyimpanan database skor lokal
 ├── bot.py             # Logika bot Discord (Slash commands & QnA)
 └── README.md          # Dokumentasi proyek

@@ -5,24 +5,8 @@ from datetime import datetime
 from typing import Optional, Dict, List, Tuple
 
 import random
-
-WRONG_ANSWER_JOKES = [
-    "❌ **Tetoot! Salah.** Dosen killer langsung tersenyum tipis melihat jawabanmu... 💀",
-    "❌ **Kurang tepat {user}!** Waduh, jangan-jangan semalam begadang bukan belajar tapi push rank? 🎮",
-    "❌ **Salah bung!** Nilai kuis terancam terjun bebas kalau begini caranya. Coba lagi! 📉",
-    "❌ **Belum bener nih {user}.** Otakmu kayaknya butuh di-restart atau di-compile ulang dulu deh. 🔄",
-    "❌ **Yah, melenceng jauh!** Jawabanmu sama materinya udah kayak beda universe. Ayo tebak lagi! 🚀",
-    "❌ **Salah!** Malaikat pencatat amal baik pun bingung mau masukin jawaban ini ke mana... 🗿",
-    "❌ **Salah euy {user}!** Belajar di mana kamu tadi malam? Jangan bikin dosen menangis di pojokan lab! 😭",
-    "❌ **Masih belum tepat!** Tenang, kesempatan masih terbuka lebar sebelum direbut yang lain! 🏃‍♂️",
-    "❌ **Waduh bukan itu!** Kode error aja ada solusinya di StackOverflow, masa jawaban ini zonk 🤣",
-    "❌ **Bukan {user}!** Coba minum kopi dulu biar sinapsis otaknya nyambung kembali ☕",
-    "❌ **Tetoot! Salah.** Aura *'Hari ini kita post-test ya!'* mendadak semakin terasa dingin... 💀",
-    "❌ **Salah!** Tapi hargai usahanya, setidaknya jempolmu sudah berjuang keras mengetik 👍",
-    "❌ **Masih salah!** Kalau di terminal Linux, ini udah keluar pesan `Segmentation fault (core dumped)` 💥",
-    "❌ **Nggak kena!** Jawabanmu seperti WiFi kampus: kadang ada, tapi seringnya nggak nyambung! 📶",
-    "❌ **Zonk!** Coba cek lagi catatannya, atau jangan-jangan bukunya masih segel plastik? 📦"
-]
+# Respon jawaban salah singkat dan hemat token tanpa lelucon/melawak
+WRONG_ANSWER_TEXT = "❌ Salah."
 
 class GameSession:
     def __init__(self, channel_id: int, question: str, answer: str, points: int, started_by: int, alternatives: List[str] = None):
@@ -208,10 +192,9 @@ class GameManager:
         )
         return ranked[:limit]
 
-    def get_random_wrong_joke(self, user_mention: str) -> str:
-        """Mengambil lelucon acak saat jawaban pengguna salah."""
-        joke_template = random.choice(WRONG_ANSWER_JOKES)
-        return joke_template.format(user=user_mention)
+    def get_random_wrong_joke(self, user_mention: str = "") -> str:
+        """Menghasilkan respon singkat saat jawaban salah (tanpa lelucon/melawak)."""
+        return "❌ Salah."
 
 # Singleton instance
 game_mgr = GameManager()

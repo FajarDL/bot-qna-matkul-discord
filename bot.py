@@ -504,6 +504,7 @@ def build_help_embed() -> discord.Embed:
         value=(
             "• `/matkul` : Panduan topik dan tips belajar mata kuliah inti.\n"
             "• `/ping` : Cek kecepatan respons / latensi koneksi bot.\n"
+            "• `/shutdown` : *[Owner/Admin]* Matikan proses bot agar offline.\n"
             "• `/help` atau `/bantuan` : Menampilkan menu panduan perintah ini."
         ),
         inline=False
@@ -524,6 +525,17 @@ async def slash_bantuan(interaction: discord.Interaction):
 async def slash_ping(interaction: discord.Interaction):
     latency = round(bot.latency * 1000)
     await interaction.response.send_message(f"🏓 Pong! Latensi bot: **{latency} ms**", ephemeral=True)
+
+@bot.tree.command(name="shutdown", description="[Owner/Admin] Matikan proses bot agar offline")
+async def slash_shutdown(interaction: discord.Interaction):
+    if not is_owner_or_admin(interaction):
+        await interaction.response.send_message(
+            "⛔ **Akses Ditolak!** Hanya pemilik bot / administrator yang dapat mematikan bot.",
+            ephemeral=True
+        )
+        return
+    await interaction.response.send_message("🔌 **Bot dimatikan.** Status bot sekarang offline. Sampai jumpa! 👋")
+    await bot.close()
 
 # ================= TEXT COMMANDS (FALLBACK) =================
 

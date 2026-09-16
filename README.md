@@ -35,7 +35,7 @@ Bot asisten virtual berbasis kecerdasan buatan (**Google Gemini**) yang dirancan
 
 ### 1. Kloning Repositori
 ```bash
-git clone https://github.com/FajarDL/bot-qna-matkul-discord.git
+git clone https://github.com/<username>/bot-qna-matkul-discord.git
 cd discord-student-bot
 ```
 
@@ -86,6 +86,5 @@ discord-student-bot/
 
 ---
 
-## 👨‍💻 Pengembang
-- **Fajar Daya Lutfiana** (NIM: 2450081105)  
-  *Informatika, Fakultas Sains dan Informatika, Universitas Jenderal Achmad Yani*
+## 📄 Lisensi & Kontribusi
+Proyek ini bersifat open-source dan bebas digunakan serta dikembangkan untuk mendukung keperluan pembelajaran dan komunitas akademik.

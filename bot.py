@@ -158,7 +158,7 @@ async def slash_bantuan(interaction: discord.Interaction):
         value="Memeriksa kecepatan respons bot ke server Discord.",
         inline=False
     )
-    embed.set_footer(text="Dibuat oleh Fajar Daya Lutfiana (2450081105) • Informatika UNJANI")
+    embed.set_footer(text="Asisten Virtual Mahasiswa • Informatika UNJANI")
     await interaction.response.send_message(embed=embed)
 
 @bot.tree.command(name="ping", description="Mengecek status latensi bot")

@@ -4,6 +4,26 @@ import json
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple
 
+import random
+
+WRONG_ANSWER_JOKES = [
+    "❌ **Tetoot! Salah.** Dosen killer langsung tersenyum tipis melihat jawabanmu... 💀",
+    "❌ **Kurang tepat {user}!** Waduh, jangan-jangan semalam begadang bukan belajar tapi push rank? 🎮",
+    "❌ **Salah bung!** Nilai kuis terancam terjun bebas kalau begini caranya. Coba lagi! 📉",
+    "❌ **Belum bener nih {user}.** Otakmu kayaknya butuh di-restart atau di-compile ulang dulu deh. 🔄",
+    "❌ **Yah, melenceng jauh!** Jawabanmu sama materinya udah kayak beda universe. Ayo tebak lagi! 🚀",
+    "❌ **Salah!** Malaikat pencatat amal baik pun bingung mau masukin jawaban ini ke mana... 🗿",
+    "❌ **Salah euy {user}!** Belajar di mana kamu tadi malam? Jangan bikin dosen menangis di pojokan lab! 😭",
+    "❌ **Masih belum tepat!** Tenang, kesempatan masih terbuka lebar sebelum direbut yang lain! 🏃‍♂️",
+    "❌ **Waduh bukan itu!** Kode error aja ada solusinya di StackOverflow, masa jawaban ini zonk 🤣",
+    "❌ **Bukan {user}!** Coba minum kopi dulu biar sinapsis otaknya nyambung kembali ☕",
+    "❌ **Tetoot! Salah.** Aura *'Hari ini kita post-test ya!'* mendadak semakin terasa dingin... 💀",
+    "❌ **Salah!** Tapi hargai usahanya, setidaknya jempolmu sudah berjuang keras mengetik 👍",
+    "❌ **Masih salah!** Kalau di terminal Linux, ini udah keluar pesan `Segmentation fault (core dumped)` 💥",
+    "❌ **Nggak kena!** Jawabanmu seperti WiFi kampus: kadang ada, tapi seringnya nggak nyambung! 📶",
+    "❌ **Zonk!** Coba cek lagi catatannya, atau jangan-jangan bukunya masih segel plastik? 📦"
+]
+
 class GameSession:
     def __init__(self, channel_id: int, question: str, answer: str, points: int, started_by: int, alternatives: List[str] = None):
         self.channel_id = channel_id
@@ -15,12 +35,27 @@ class GameSession:
         self.is_active = True
         
         # Kumpulkan semua variasi jawaban yang sah
-        self.valid_answers = [self.normalize_text(self.answer)]
+        self.valid_answers = []
+        self._add_valid_answer(self.answer)
         if alternatives:
             for alt in alternatives:
-                norm_alt = self.normalize_text(alt)
-                if norm_alt and norm_alt not in self.valid_answers:
-                    self.valid_answers.append(norm_alt)
+                self._add_valid_answer(alt)
+
+    def _add_valid_answer(self, raw_text: str):
+        if not raw_text:
+            return
+        cleaned = re.sub(r"[\*\_`\"']", "", str(raw_text))
+        norm = self.normalize_text(cleaned)
+        if norm and norm not in self.valid_answers:
+            self.valid_answers.append(norm)
+
+        # Pisahkan variasi jika ada pemisah seperti '/', '(', ',', 'atau', 'or'
+        # contoh: "Stack (Tumpukan)" -> "stack", "tumpukan"
+        parts = re.split(r"[\/,\(\)\|\;\-]|\batau\b|\bor\b", cleaned, flags=re.IGNORECASE)
+        for part in parts:
+            p_norm = self.normalize_text(part)
+            if p_norm and len(p_norm) >= 2 and p_norm not in self.valid_answers:
+                self.valid_answers.append(p_norm)
 
     @staticmethod
     def normalize_text(text: str) -> str:
@@ -28,10 +63,8 @@ class GameSession:
         if not text:
             return ""
         text = text.lower().strip()
-        # Hilangkan simbol/tanda baca non-alfanumerik
-        text = re.sub(r"[^\w\s]", "", text)
-        # Hilangkan spasi berulang
-        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r"[\*\_`\"'.,!?:;()\[\]{}<>/\\|@#$%^&+=~-]", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
         return text
 
     def is_correct(self, guess: str) -> bool:
@@ -40,14 +73,20 @@ class GameSession:
         if not norm_guess:
             return False
         
-        # Cek kesesuaian tepat
+        # 1. Cek kesesuaian tepat
         if norm_guess in self.valid_answers:
             return True
         
-        # Cek jika jawaban utama terkandung dalam tebakan (jika tebakan adalah kalimat pendek)
+        # 2. Cek apakah salah satu kata kunci jawaban muncul sebagai kata utuh dalam tebakan
         for valid in self.valid_answers:
-            # Jika kata kunci jawaban memiliki panjang >= 4 huruf dan ada di dalam tebakan
-            if len(valid) >= 4 and f" {valid} " in f" {norm_guess} ":
+            if not valid:
+                continue
+            # Boundary pencarian kata
+            pattern = rf"(?:^|\s){re.escape(valid)}(?:$|\s)"
+            if re.search(pattern, norm_guess):
+                return True
+            # Jika tebakan adalah bagian dari kata kunci yang cukup panjang
+            if len(norm_guess) >= 4 and norm_guess in valid:
                 return True
         return False
 
@@ -168,6 +207,11 @@ class GameManager:
             reverse=True
         )
         return ranked[:limit]
+
+    def get_random_wrong_joke(self, user_mention: str) -> str:
+        """Mengambil lelucon acak saat jawaban pengguna salah."""
+        joke_template = random.choice(WRONG_ANSWER_JOKES)
+        return joke_template.format(user=user_mention)
 
 # Singleton instance
 game_mgr = GameManager()

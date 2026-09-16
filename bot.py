@@ -73,12 +73,13 @@ async def generate_quiz_question(category: str) -> dict:
 Tolong buatkan 1 buah soal kuis/trivia seputar topik: '{category}'.
 Kriteria soal:
 1. Menarik, mendidik, dan relevan dengan materi perkuliahan.
-2. Jawabannya HARUS berupa kata tunggal atau frasa pendek yang pasti (maksimal 1-3 kata), bukan kalimat panjang!
-   Contoh pertanyaan & jawaban:
-   - "Struktur data apa yang beroperasi dengan prinsip LIFO (Last-In First-Out)?" -> Jawaban: "Stack"
-   - "Keyword SQL apa yang digunakan untuk mengurutkan hasil query?" -> Jawaban: "ORDER BY"
-   - "Protokol apa yang digunakan untuk mentransfer data halaman web secara aman?" -> Jawaban: "HTTPS"
-3. Berikan variasi jawaban atau sinonim umum pada 'alternatif'.
+2. Jawabannya HARUS berupa kata tunggal atau frasa pendek (1-3 kata), bukan kalimat panjang!
+   PENTING: Pada field 'jawaban', berikan kata kunci inti tanpa tanda kurung atau penjelasan bertele-tele.
+   Contoh:
+   - Jawaban: "Stack", Alternatif: ["Tumpukan", "LIFO"]
+   - Jawaban: "ORDER BY", Alternatif: ["Order by"]
+   - Jawaban: "HTTPS", Alternatif: ["HTTP Secure", "Port 443"]
+3. Berikan variasi jawaban, singkatan, atau sinonim umum pada 'alternatif'.
 
 Balas HANYA dalam format JSON baku berikut (tanpa markdown tambahan):
 {{
@@ -132,30 +133,50 @@ async def on_message(message: discord.Message):
     # 1. Cek apakah ada game kuis aktif di channel ini (Siapa Cepat Dia Dapat)
     active_game = game_mgr.get_active_game(message.channel.id)
     if active_game:
-        is_correct, points, correct_ans = game_mgr.check_guess(
-            channel_id=message.channel.id,
-            user_id=message.author.id,
-            username=message.author.display_name,
-            guess=message.content
-        )
-        if is_correct:
-            stats = game_mgr.get_user_stats(message.author.id)
-            embed = discord.Embed(
-                title="🎉 BINGO! JAWABAN BENAR!",
-                description=(
-                    f"🏆 Selamat kepada {message.author.mention}!\n\n"
-                    f"✅ **Jawaban Tepat:** `{correct_ans}`\n"
-                    f"🎁 **Hadiah:** `+{points} Poin`\n\n"
-                    f"📊 **Statistik Poin Kamu Saat Ini:**\n"
-                    f"• Total Poin: **{stats['points']} Poin**\n"
-                    f"• Total Menang: **{stats['wins']}x Juara**\n\n"
-                    f"*Gunakan `/leaderboard` untuk melihat peringkat klasemen server!*"
-                ),
-                color=config.COLOR_SUCCESS
-            )
-            embed.set_footer(text="Game Selesai • Kuota 1 Pemenang Terpenuhi!")
-            await message.reply(embed=embed)
+        # Abaikan pesan perintah bot
+        if message.content.startswith(config.BOT_PREFIX) or message.content.startswith("/"):
+            await bot.process_commands(message)
             return
+
+        content = message.content.strip()
+        if not content:
+            return
+
+        # Cek apakah pesan berupa mention khusus tanya bot (bukan tebakan kuis)
+        is_explicit_tag = (
+            bot.user in message.mentions and 
+            (f"<@{bot.user.id}>" in message.content or f"<@!{bot.user.id}>" in message.content)
+        )
+        if not is_explicit_tag:
+            is_correct, points, correct_ans = game_mgr.check_guess(
+                channel_id=message.channel.id,
+                user_id=message.author.id,
+                username=message.author.display_name,
+                guess=content
+            )
+            if is_correct:
+                stats = game_mgr.get_user_stats(message.author.id)
+                embed = discord.Embed(
+                    title="🎉 BINGO! JAWABAN BENAR!",
+                    description=(
+                        f"🏆 Selamat kepada {message.author.mention}!\n\n"
+                        f"✅ **Jawaban Tepat:** `{correct_ans}`\n"
+                        f"🎁 **Hadiah:** `+{points} Poin`\n\n"
+                        f"📊 **Statistik Poin Kamu Saat Ini:**\n"
+                        f"• Total Poin: **{stats['points']} Poin**\n"
+                        f"• Total Menang: **{stats['wins']}x Juara**\n\n"
+                        f"*Gunakan `/leaderboard` untuk melihat peringkat klasemen server!*"
+                    ),
+                    color=config.COLOR_SUCCESS
+                )
+                embed.set_footer(text="Game Selesai • Kuota 1 Pemenang Terpenuhi!")
+                await message.reply(embed=embed)
+                return
+            else:
+                # JAWABAN SALAH -> Balas dengan roasting / lelucon kocak!
+                joke = game_mgr.get_random_wrong_joke(message.author.mention)
+                await message.reply(joke)
+                return
 
     # 2. Menjawab hanya jika bot di-tag secara eksplisit dalam teks pesan (bukan sekadar reply)
     is_explicit_tag = (

@@ -50,8 +50,14 @@ async def on_ready():
     print("=" * 50)
     
     try:
+        # Sync instan ke setiap server (guild) agar langsung muncul seketika
+        for guild in bot.guilds:
+            bot.tree.copy_global_to(guild=guild)
+            await bot.tree.sync(guild=guild)
+            print(f"[Slash Commands] Sinkronisasi instan ke server: {guild.name} ({guild.id})")
+        
         synced = await bot.tree.sync()
-        print(f"[Slash Commands] Berhasil menyinkronkan {len(synced)} slash commands.")
+        print(f"[Slash Commands] Berhasil menyinkronkan {len(synced)} global slash commands.")
     except Exception as e:
         print(f"[Slash Commands Error] Gagal menyinkronkan: {e}")
 

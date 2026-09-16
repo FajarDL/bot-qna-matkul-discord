@@ -21,26 +21,36 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix=config.BOT_PREFIX, intents=intents, help_command=None)
 
+MODELS_TO_TRY = [
+    getattr(config, "GEMINI_MODEL", "gemini-3.6-flash"),
+    "gemini-3.1-flash-lite",
+]
+
 async def ask_gemini(prompt: str, custom_instruction: str = None) -> str:
-    """Fungsi pembantu untuk memanggil Gemini API."""
+    """Fungsi pembantu untuk memanggil Gemini API dengan mekanisme fallback otomatis."""
     if not ai_client:
         return (
             "⚠️ **API Key Gemini belum terpasang.**\n"
             "Silakan tambahkan `GEMINI_API_KEY` Anda di file `.env` untuk mengaktifkan AI Q&A."
         )
-    try:
-        instruction = custom_instruction if custom_instruction else config.SYSTEM_PROMPT
-        response = ai_client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config={
-                "system_instruction": instruction,
-                "temperature": 0.7,
-            }
-        )
-        return response.text
-    except Exception as e:
-        return f"Terjadi kesalahan pada server AI: `{str(e)}`"
+    instruction = custom_instruction if custom_instruction else config.SYSTEM_PROMPT
+    last_error = None
+    for model_name in MODELS_TO_TRY:
+        try:
+            response = ai_client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config={
+                    "system_instruction": instruction,
+                    "temperature": 0.7,
+                }
+            )
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            last_error = e
+            continue
+    return f"Terjadi kesalahan pada server AI: `{str(last_error)}`"
 
 @bot.event
 async def on_ready():

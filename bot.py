@@ -114,13 +114,30 @@ async def slash_tanya(interaction: discord.Interaction, pertanyaan: str):
     await interaction.response.defer(thinking=True)
     jawaban = await ask_gemini(pertanyaan)
     
+    # Tampilkan pertanyaan user secara terstruktur
+    pertanyaan_quoted = "\n> ".join(pertanyaan.strip().splitlines())
+    header = f"**❓ Pertanyaan:**\n> {pertanyaan_quoted}\n\n**💬 Jawaban:**\n"
+    
+    max_ans_len = 4000 - len(header)
+    if len(jawaban) <= max_ans_len:
+        desc = header + jawaban
+        remaining = ""
+    else:
+        desc = header + jawaban[:max_ans_len]
+        remaining = jawaban[max_ans_len:]
+    
     embed = discord.Embed(
         title="💡 Tanya Jawab Materi Kuliah",
-        description=jawaban[:4000],
+        description=desc,
         color=config.COLOR_PRIMARY
     )
     embed.set_footer(text=f"Ditanyakan oleh {interaction.user.display_name} • Bot QnA Matkul")
     await interaction.followup.send(embed=embed)
+    
+    while remaining:
+        chunk = remaining[:1950]
+        remaining = remaining[1950:]
+        await interaction.followup.send(chunk)
 
 @bot.tree.command(name="debug", description="Bantu analisis dan temukan solusi untuk kode yang error")
 @app_commands.describe(
@@ -132,13 +149,29 @@ async def slash_debug(interaction: discord.Interaction, bahasa: str, kode: str):
     prompt = f"Tolong bantu saya menganalisis dan memperbaiki kode berikut dalam bahasa {bahasa}:\n```\n{kode}\n```\nJelaskan letak error, penyebabnya, dan berikan kode yang sudah diperbaiki."
     jawaban = await ask_gemini(prompt)
     
+    kode_snippet = kode if len(kode) <= 600 else kode[:600] + "\n// ... (kode dipotong)"
+    header = f"**💻 Bahasa:** `{bahasa}`\n**⚠️ Kode/Kasus:**\n```{bahasa.lower()}\n{kode_snippet}\n```\n**🛠️ Solusi & Penjelasan:**\n"
+    
+    max_ans_len = 4000 - len(header)
+    if len(jawaban) <= max_ans_len:
+        desc = header + jawaban
+        remaining = ""
+    else:
+        desc = header + jawaban[:max_ans_len]
+        remaining = jawaban[max_ans_len:]
+
     embed = discord.Embed(
         title=f"🛠️ Bantuan Debugging ({bahasa})",
-        description=jawaban[:4000],
+        description=desc,
         color=config.COLOR_WARNING
     )
-    embed.set_footer(text="Bot QnA Matkul • Code Debugger")
+    embed.set_footer(text=f"Ditanyakan oleh {interaction.user.display_name} • Bot QnA Matkul")
     await interaction.followup.send(embed=embed)
+    
+    while remaining:
+        chunk = remaining[:1950]
+        remaining = remaining[1950:]
+        await interaction.followup.send(chunk)
 
 @bot.tree.command(name="ringkas", description="Ringkas materi atau catatan kuliah yang panjang menjadi poin-poin penting")
 @app_commands.describe(teks_materi="Tempelkan teks materi kuliah yang ingin diringkas")
@@ -147,13 +180,30 @@ async def slash_ringkas(interaction: discord.Interaction, teks_materi: str):
     prompt = f"Tolong buat ringkasan komprehensif dan poin-poin penting (bullet points) dari materi kuliah berikut:\n\n{teks_materi}"
     jawaban = await ask_gemini(prompt)
     
+    materi_snippet = teks_materi if len(teks_materi) <= 350 else teks_materi[:350] + "..."
+    materi_quoted = "\n> ".join(materi_snippet.strip().splitlines())
+    header = f"**📄 Cuplikan Materi:**\n> {materi_quoted}\n\n**📝 Hasil Ringkasan:**\n"
+    
+    max_ans_len = 4000 - len(header)
+    if len(jawaban) <= max_ans_len:
+        desc = header + jawaban
+        remaining = ""
+    else:
+        desc = header + jawaban[:max_ans_len]
+        remaining = jawaban[max_ans_len:]
+
     embed = discord.Embed(
         title="📝 Ringkasan Materi Kuliah",
-        description=jawaban[:4000],
+        description=desc,
         color=config.COLOR_PURPLE
     )
-    embed.set_footer(text="Bot QnA Matkul • Summary Helper")
+    embed.set_footer(text=f"Diminta oleh {interaction.user.display_name} • Bot QnA Matkul")
     await interaction.followup.send(embed=embed)
+    
+    while remaining:
+        chunk = remaining[:1950]
+        remaining = remaining[1950:]
+        await interaction.followup.send(chunk)
 
 @bot.tree.command(name="matkul", description="Panduan bidang mata kuliah utama dan tips belajarnya")
 @app_commands.describe(kategori="Pilih bidang mata kuliah yang ingin dilihat")
@@ -224,10 +274,12 @@ async def slash_ping(interaction: discord.Interaction):
 async def cmd_tanya(ctx, *, query: str):
     async with ctx.typing():
         jawaban = await ask_gemini(query)
-        if len(jawaban) <= 2000:
-            await ctx.reply(jawaban)
+        pertanyaan_quoted = "\n> ".join(query.strip().splitlines())
+        pesan = f"**❓ Pertanyaan:**\n> {pertanyaan_quoted}\n\n**💬 Jawaban:**\n{jawaban}"
+        if len(pesan) <= 2000:
+            await ctx.reply(pesan)
         else:
-            chunks = [jawaban[i:i+1900] for i in range(0, len(jawaban), 1900)]
+            chunks = [pesan[i:i+1900] for i in range(0, len(pesan), 1900)]
             for chunk in chunks:
                 await ctx.reply(chunk)
 

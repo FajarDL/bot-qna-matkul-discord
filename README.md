@@ -18,11 +18,9 @@ Bot asisten virtual tanya-jawab (Q&A) cerdas berbasis AI (**Google Gemini**) yan
    Melihat 10 besar peringkat klasemen skor mahasiswa di server dan memeriksa saldo poin serta rekor juara pribadi.
 6. **📚 Panduan Bidang Matkul (`/matkul`):**  
    Pilihan panduan dan tips belajar praktis untuk berbagai mata kuliah inti komputasi.
-7. **💀 Arsip Dosen Killer IF UNJANI (`/dosen-killer`):**  
-   Menampilkan profil rahasia sosok dosen sepuh IF UNJANI, fenomena *Curse of Knowledge*, dan kata keramat *"HARI INI KITA POST TES YA!" 💀*.
-8. **📖 Menu Panduan Lengkap (`/help`):**  
+7. **📖 Menu Panduan Lengkap (`/help`):**  
    Menampilkan panduan ringkas dan daftar semua perintah yang dapat dijalankan.
-9. **💬 Interaksi Fleksibel:**  
+8. **💬 Interaksi Fleksibel:**  
    Mendukung *Slash Commands* Discord modern serta respons otomatis saat bot di-mention di channel obrolan.
 
 ---

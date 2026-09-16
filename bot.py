@@ -39,7 +39,11 @@ async def ask_gemini(prompt: str, custom_instruction: str = None) -> str:
             "Silakan tambahkan `GEMINI_API_KEY` Anda di file `.env` untuk mengaktifkan AI Q&A."
         )
     base_instruction = custom_instruction if custom_instruction else config.SYSTEM_PROMPT
-    instruction = f"{base_instruction}\n\n{get_dosen_ai_context()}"
+    dosen_keywords = ["dosen killer", "dosen sepuh", "post test", "post-test", "post tes", "curse of knowledge"]
+    if any(k in prompt.lower() for k in dosen_keywords):
+        instruction = f"{base_instruction}\n\n{get_dosen_ai_context()}"
+    else:
+        instruction = base_instruction
     last_error = None
     for model_name in MODELS_TO_TRY:
         try:
@@ -173,9 +177,8 @@ async def on_message(message: discord.Message):
                 await message.reply(embed=embed)
                 return
             else:
-                # JAWABAN SALAH -> Balas dengan roasting / lelucon kocak!
-                joke = game_mgr.get_random_wrong_joke(message.author.mention)
-                await message.reply(joke)
+                # JAWABAN SALAH -> Cukup jawab singkat agar ringkas & hemat token
+                await message.reply("❌ **Salah!**")
                 return
 
     # 2. Menjawab hanya jika bot di-tag secara eksplisit dalam teks pesan (bukan sekadar reply)
@@ -525,7 +528,6 @@ def build_help_embed() -> discord.Embed:
     embed.add_field(
         name="📚 Informasi & Utilitas",
         value=(
-            "• `/dosen-killer` : Arsip rahasia & kata keramat Dosen Killer IF UNJANI 💀.\n"
             "• `/matkul` : Panduan topik dan tips belajar mata kuliah inti.\n"
             "• `/ping` : Cek kecepatan respons / latensi koneksi bot.\n"
             "• `/shutdown` : *[Owner/Admin]* Matikan proses bot agar offline.\n"
@@ -537,9 +539,10 @@ def build_help_embed() -> discord.Embed:
     embed.set_footer(text="Bot QnA Matkul • Belajar Lebih Cepat & Menyenangkan")
     return embed
 
-@bot.tree.command(name="dosen-killer", description="Melihat arsip rahasia sosok Dosen Killer IF UNJANI & kata keramatnya 💀")
+@bot.tree.command(name="dosen-killer", description="[Rahasia] Melihat arsip rahasia sosok Dosen Killer IF UNJANI")
 async def slash_dosen_killer(interaction: discord.Interaction):
-    await interaction.response.send_message(embed=build_dosen_embed())
+    # Bersifat privat/rahasia: hanya pengirim yang dapat melihat pesan ini
+    await interaction.response.send_message(embed=build_dosen_embed(), ephemeral=True)
 
 @bot.tree.command(name="help", description="Menampilkan panduan dan daftar semua perintah Bot QnA Matkul")
 async def slash_help(interaction: discord.Interaction):
@@ -569,7 +572,12 @@ async def slash_shutdown(interaction: discord.Interaction):
 
 @bot.command(name="dosenkiller", aliases=["dosen", "posttest"])
 async def cmd_dosen_killer(ctx):
-    await ctx.reply(embed=build_dosen_embed())
+    # Kirim via DM agar tetap privat dan hapus pesan perintah jika memungkinkan
+    try:
+        await ctx.author.send(embed=build_dosen_embed())
+        await ctx.message.delete()
+    except Exception:
+        await ctx.reply("🔒 Arsip ini bersifat rahasia. Silakan gunakan perintah `/dosen-killer` (hanya Anda yang dapat melihatnya).", delete_after=5)
 
 @bot.command(name="tanya")
 async def cmd_tanya(ctx, *, query: str):

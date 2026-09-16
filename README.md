@@ -1,33 +1,29 @@
-# 🤖 Asisten Mahasiswa UNJANI - Discord Bot
+# 🤖 Bot QnA Mata Kuliah - Discord Bot
 
-Bot asisten virtual berbasis kecerdasan buatan (**Google Gemini**) yang dirancang untuk membantu mahasiswa Program Studi Informatika, Universitas Jenderal Achmad Yani (UNJANI). Bot ini siap mendampingi mahasiswa dalam memahami materi perkuliahan, pemecahan masalah (*debugging*) kodingan, pemodelan sistem (UML), serta memberikan panduan cepat seputar alur Tugas Akhir (SIMTA).
+Bot asisten virtual tanya-jawab (Q&A) cerdas berbasis AI (**Google Gemini**) yang dirancang khusus untuk mendampingi mahasiswa dalam memahami materi perkuliahan, membantu *debugging* kode program, dan meringkas materi studi di server Discord.
 
 ---
 
 ## ✨ Fitur Utama
 
-1. **AI Q&A Cerdas (`/tanya` & Mention):**  
-   Mahasiswa dapat menanyakan konsep perkuliahan, materi teori, rekayasa perangkat lunak, maupun solusi kode error secara interaktif.
-2. **Knowledge Base SIMTA (`/simta`):**  
-   Akses cepat aturan resmi tugas akhir:
-   - Syarat pendaftaran TA1 (minimal 128 SKS, bebas tunggakan, matkul wajib min C).
-   - Syarat pendaftaran TA2 (sidang skripsi).
-   - Aturan batas bimbingan (minimal 6 kali TA1 dan 8 kali TA2).
-   - Formula pembobotan nilai akhir kumulatif (40% bimbingan + 50% pengujian + 10% administrasi).
-   - Kebijakan bypass nilai indeks A (Sinta 3 / Scopus) dan penahanan nilai LoA (maksimal 1 bulan).
-   - Batas kuota bimbingan dosen berdasarkan jabatan fungsional.
-3. **Slash Commands Modern:**  
-   Mendukung `/tanya`, `/simta`, `/bantuan`, dan `/ping` lengkap dengan menu pilihan otomatis.
-4. **Respon Mention di Channel:**  
-   Cukup tag `@bot` di obrolan umum untuk mendapatkan jawaban langsung dari AI.
+1. **💡 Tanya Jawab Materi Kuliah (`/tanya` & Mention):**  
+   Mahasiswa dapat menanyakan konsep materi kuliah apa pun, seperti Algoritma, Struktur Data, Basis Data, Jaringan Komputer, Rekayasa Perangkat Lunak, Sistem Operasi, hingga Matematika Diskrit.
+2. **🛠️ Asisten Debugging Kode (`/debug`):**  
+   Menganalisis kode program yang error (Python, C++, Java, PHP, JavaScript, SQL, dll), menjelaskan letak kesalahan, dan memberikan solusi perbaikan kode secara otomatis.
+3. **📝 Ringkas Materi Kuliah (`/ringkas`):**  
+   Meringkas teks modul atau materi kuliah yang panjang menjadi poin-poin inti yang ringkas dan padat.
+4. **📚 Panduan Bidang Matkul (`/matkul`):**  
+   Pilihan panduan dan tips belajar praktis untuk berbagai mata kuliah inti komputasi.
+5. **💬 Interaksi Fleksibel:**  
+   Mendukung *Slash Commands* Discord modern serta respons otomatis saat bot di-mention di channel obrolan.
 
 ---
 
 ## 🛠️ Prasyarat
 
-- Python versi 3.10 atau yang lebih baru.
+- Python versi 3.10 atau lebih baru.
 - Token Bot dari [Discord Developer Portal](https://discord.com/developers/applications).
-- *(Direkomendasikan)* API Key Google Gemini gratis dari [Google AI Studio](https://aistudio.google.com/).
+- API Key Google Gemini (gratis) dari [Google AI Studio](https://aistudio.google.com/).
 
 ---
 
@@ -36,7 +32,7 @@ Bot asisten virtual berbasis kecerdasan buatan (**Google Gemini**) yang dirancan
 ### 1. Kloning Repositori
 ```bash
 git clone https://github.com/<username>/bot-qna-matkul-discord.git
-cd discord-student-bot
+cd bot-qna-matkul-discord
 ```
 
 ### 2. Buat & Aktifkan Virtual Environment
@@ -56,13 +52,14 @@ pip install -r requirements.txt
 ```
 
 ### 4. Konfigurasi File `.env`
-Buka file `.env` lalu masukkan kredensial Anda:
+Buka file `.env` di folder proyek, lalu masukkan kredensial:
 ```env
-DISCORD_BOT_TOKEN=token_bot_anda_disini
-GEMINI_API_KEY=api_key_gemini_anda_disini
+DISCORD_BOT_TOKEN=masukkan_token_discord_anda_disini
+GEMINI_API_KEY=masukkan_api_key_gemini_disini
 ```
 
-> **PENTING:** Pastikan opsi **Message Content Intent** dan **Server Members Intent** sudah diaktifkan di tab **Bot** pada [Discord Developer Portal](https://discord.com/developers/applications).
+> **Catatan Pengaturan Discord:**  
+> Pastikan opsi **Message Content Intent** sudah diaktifkan pada tab **Bot** di [Discord Developer Portal](https://discord.com/developers/applications).
 
 ### 5. Jalankan Bot
 ```bash
@@ -74,17 +71,17 @@ python bot.py
 ## 📁 Struktur Direktori
 
 ```text
-discord-student-bot/
-├── .env.example       # Contoh template variabel lingkungan
-├── .gitignore          # Daftar file yang diabaikan Git (token aman)
-├── requirements.txt    # Dependensi library Python
-├── config.py           # Konfigurasi sistem, persona AI & warna embed
-├── knowledge_base.py   # Basis data FAQ akademik & pedoman SIMTA
-├── bot.py              # Logika utama bot Discord & integrasi AI
+bot-qna-matkul-discord/
+├── .env.example       # Template variabel lingkungan
+├── .gitignore          # Proteksi Git (token & cache aman)
+├── requirements.txt    # Daftar dependensi library
+├── config.py           # Konfigurasi sistem & instruksi persona AI
+├── knowledge_base.py   # Panduan materi kuliah & tips belajar
+├── bot.py              # Logika bot Discord (Slash commands & QnA)
 └── README.md           # Dokumentasi proyek
 ```
 
 ---
 
 ## 📄 Lisensi & Kontribusi
-Proyek ini bersifat open-source dan bebas digunakan serta dikembangkan untuk mendukung keperluan pembelajaran dan komunitas akademik.
+Proyek ini bersifat *open-source* dan bebas digunakan serta dikembangkan untuk mendukung keperluan pembelajaran dan komunitas akademik.
